@@ -1,4 +1,5 @@
 @using Microsoft.JSInterop
+@using TripPlanner.Client.Components
 @page "/"
 @inject HttpClient Http
 @inject Microsoft.JSInterop.IJSRuntime JS
@@ -6,7 +7,7 @@
 <div class="app-shell">
 <header class="topbar">
  <a class="brand" href="/"><span class="brand-mark">🎒</span><span>trip<span class="brand-accent">planner</span><small>YOUR JOURNEY, SIMPLIFIED</small></span></a>
- <nav class="topnav"><a href="#planner">Plan a trip</a><a href="#features">How it works</a></nav>
+ <nav class="topnav"><a href="#planner">Plan a trip</a><a href="#features">How it works</a><a href="#budget-planner">Budget planner</a></nav>
  <span class="top-pill">🎒 AI-powered journeys</span>
 </header>
 <main>
@@ -51,6 +52,7 @@
  </div>
  }
 </section>
+<BudgetPlanner />
 <section id="features" class="features"><div><span class="kicker">WHY TRIP PLANNER?</span><h2>Less planning.<br/><em>More exploring.</em></h2></div><div class="feature"><span>01 ✧</span><h4>Made just for you</h4><p>Your interests, your pace, your perfect itinerary.</p></div><div class="feature"><span>02 ⌁</span><h4>Go with confidence</h4><p>Discover places and open directions in Google Maps.</p></div><div class="feature"><span>03 ◇</span><h4>Travel your way</h4><p>From weekend escapes to long adventures.</p></div></section>
 </main><footer class="footer"><span class="brand-mini">🎒 tripplanner</span><span>Built for the love of exploring.</span><span>© 2026 Trip Planner</span></footer>
 </div>
