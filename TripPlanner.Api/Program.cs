@@ -22,7 +22,7 @@ app.MapPost("/api/plan", async (TripRequest request, IHttpClientFactory factory,
     if (string.IsNullOrWhiteSpace(key))
         return Results.Problem("Gemini API key is not configured on the server.", statusCode: 503);
 
-    var model = config["GEMINI_MODEL"] ?? "gemini-3.5-flash-lite";
+    var model = config["GEMINI_MODEL"] ?? "gemini-2.5-flash";
     var prompt = """
         You are a careful travel planner. Return a JSON object matching exactly this structure:
         {
@@ -61,8 +61,8 @@ app.MapPost("/api/plan", async (TripRequest request, IHttpClientFactory factory,
         using var response = await factory.CreateClient().SendAsync(message, ct);
         if (!response.IsSuccessStatusCode)
         {
-            app.Logger.LogWarning("Gemini returned HTTP {StatusCode}", (int)response.StatusCode);
-            return Results.Problem("Gemini could not generate the itinerary. Check your key, model access and quota.", statusCode: 502);
+            app.Logger.LogWarning("Gemini returned HTTP {StatusCode}. Verify model, key and quota.", (int)response.StatusCode);
+            return Results.Problem(response.StatusCode switch { System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden => "Gemini rejected the API key or its permissions.", System.Net.HttpStatusCode.TooManyRequests => "Gemini rate limit or quota reached. Please try later or check your Google AI Studio quota.", System.Net.HttpStatusCode.NotFound => $"Gemini model '{model}' is unavailable. Check GEMINI_MODEL.", _ => $"Gemini returned HTTP {(int)response.StatusCode}. Check the backend logs." }, statusCode: 502);
         }
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
