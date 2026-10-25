@@ -62,5 +62,6 @@ bool Valid()=>step switch{0=>!string.IsNullOrWhiteSpace(origin),1=>!string.IsNul
 void Toggle(string item){if(!interests.Remove(item))interests.Add(item);}
 string MapUrl(string q)=>"https://www.google.com/maps/search/?api=1&query="+Uri.EscapeDataString(q+" "+destination);
 async Task Next(){error=null;if(step<7){step++;return;}busy=true;try{var request=new TripRequest(origin,destination,group,budget,days,transport,interests,preferences);using var response=await Http.PostAsJsonAsync("api/plan",request);if(!response.IsSuccessStatusCode){var problem=await response.Content.ReadFromJsonAsync<ApiProblem>();error=problem?.Detail??$"Trip generation failed (HTTP {(int)response.StatusCode}). Check the backend terminal.";return;}result=await response.Content.ReadFromJsonAsync<PlanResponse>();if(result is null)error="No itinerary was returned. Please try again.";}catch(HttpRequestException){error="Cannot reach the trip planning API at http://localhost:5000. Check that the backend is running and CORS allows the frontend origin.";}catch(Exception){error="Trip generation failed unexpectedly. Check the browser console and backend terminal.";}finally{busy=false;}}
-sealed class ApiProblem { public string? Detail {get;set;} }\nvoid Reset(){step=0;result=null;error=null;}
+sealed class ApiProblem { public string? Detail {get;set;} }
+void Reset(){step=0;result=null;error=null;}
 }
