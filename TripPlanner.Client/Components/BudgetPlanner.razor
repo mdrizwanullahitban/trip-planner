@@ -1,0 +1,135 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<section id="budget-planner" class="budget-intelligence">
+ <div class="budget-title"><div><span class="kicker">PLAN SMARTER • SPEND LESS</span><h2>Budget intelligence<span class="accent-dot">.</span></h2><p>Enter your exact budget in rupees. Allocate it, predict your spending, and find ways to save.</p></div><span class="budget-local">⌂ Saved in this browser</span></div>
+ <div class="budget-inputs">
+  <label>Total available budget (₹)<input type="number" min="0" step="1" @bind="TotalBudget" @bind:after="Save" /></label>
+  <label>Trip duration (days)<input type="number" min="1" max="365" @bind="Days" @bind:after="Save" /></label>
+  <label>Travellers<input type="number" min="1" max="100" @bind="Travellers" @bind:after="Save" /></label>
+ </div>
+ <div class="budget-metrics">
+  <div><span>TOTAL AVAILABLE</span><strong>@Money(SafeBudget)</strong></div>
+  <div><span>ALLOCATED</span><strong>@Money(Allocated)</strong></div>
+  <div><span>@(Remaining >= 0 ? "UNALLOCATED" : "OVER BUDGET")</span><strong class="@(Remaining < 0 ? "budget-danger" : "")">@Money(Math.Abs(Remaining))</strong></div>
+  <div><span>DAILY SPEND LIMIT (EXCL. RESERVE)</span><strong>@Money(DailyAllowance)</strong></div>
+ </div>
+ <div class="budget-columns">
+  <div class="budget-card">
+   <div class="budget-card-head"><h3>Allocate your money</h3><button class="budget-small-button" @onclick="ResetAllocations">Reset to 30 / 25 / 20 / 15 / 10</button></div>
+   <p>Enter any rupee amount for each category. The remaining balance updates automatically.</p>
+   <div class="budget-alloc-bar">
+    @foreach(var item in Categories){<span style="width:@(SafeBudget > 0 ? (double)(Math.Min(item.Amount, SafeBudget) / SafeBudget * 100) : 0)% ;background:@item.Color" title="@item.Name"></span>}
+   </div>
+   @foreach(var item in Categories){
+    <div class="budget-category">
+     <div class="budget-category-label"><span class="budget-swatch" style="background:@item.Color"></span><strong>@item.Name</strong><small>@(SafeBudget > 0 ? (item.Amount / SafeBudget * 100).ToString("0.#") : "0")%</small></div>
+     <label class="budget-rupee-input"><span>₹</span><input type="number" min="0" step="1" value="@item.Amount" @onchange="e=>UpdateAmount(item,e.Value?.ToString())" aria-label="@($"{item.Name} allocation in rupees")"/></label>
+    </div>
+   }
+   <div class="budget-balance @(Remaining < 0 ? "over" : "")"><strong>@(Remaining < 0 ? "Your allocations exceed the budget" : "Available to allocate")</strong><strong>@Money(Math.Abs(Remaining))</strong></div>
+   @if(Remaining < 0){<p class="budget-warning" role="alert">Reduce one or more allocations by @Money(-Remaining) to stay within your total budget.</p>}
+  </div>
+  <div class="budget-card">
+   <h3>Expenditure predictor</h3><p>Illustrative scenarios based on your own allocation, not live market prices.</p>
+   <div class="budget-forecast">
+    <div><span>Economical (85%)</span><strong>@Money(ExpectedSpending * 0.85m)</strong></div>
+    <div class="highlight"><span>Planned spending (100%)</span><strong>@Money(ExpectedSpending)</strong></div>
+    <div><span>Higher spending (115%)</span><strong>@Money(ExpectedSpending * 1.15m)</strong></div>
+   </div>
+   <p>Daily planned expenditure: <strong>@Money(ExpectedSpending / SafeDays)</strong>. Per person per day: <strong>@Money(ExpectedSpending / SafeDays / SafeTravellers)</strong>.</p>
+   <p>Emergency reserve: <strong>@Money(Categories[4].Amount)</strong> — excluded from everyday planned spending.</p>
+   <h3>Cheaper alternatives</h3>
+   <div class="budget-tips">
+    @foreach(var tip in SavingsTips()){<div><strong>@tip.Title</strong><p>@tip.Description</p><span>Illustrative saving: @Money(tip.Saving)</span></div>}
+   </div>
+   <small>These are planning assumptions, not quoted fares or guaranteed savings. No additional pricing or AI API is used.</small>
+  </div>
+ </div>
+ <div class="budget-card budget-tracker">
+  <div class="budget-card-head"><div><h3>Actual expense tracker</h3><p>Record spending during your trip and compare it with your plan.</p></div><strong>@Money(ActualSpent) spent</strong></div>
+  <div class="budget-inputs">
+   <label>Category<select @bind="ExpenseCategory">@foreach(var item in Categories){<option value="@item.Name">@item.Name</option>}</select></label>
+   <label>Expense description<input maxlength="80" placeholder="e.g. Lunch" @bind="ExpenseDescription"/></label>
+   <label>Amount (₹)<input type="number" min="1" step="1" @bind="ExpenseAmount"/></label>
+  </div>
+  <button class="primary-button" disabled="@(ExpenseAmount <= 0 || string.IsNullOrWhiteSpace(ExpenseDescription))" @onclick="AddExpense">+ Add expense</button>
+  @if(Expenses.Count > 0){
+   <div class="budget-expenses">
+    @foreach(var expense in Expenses.Select((value,index)=>(value,index)).Reverse()){
+     <div><span><strong>@expense.value.Description</strong><small>@expense.value.Category</small></span><strong>@Money(expense.value.Amount)</strong><button aria-label="Remove expense" @onclick="()=>RemoveExpense(expense.index)">✕</button></div>
+    }
+   </div>
+  }
+  <div class="budget-balance"><strong>Budget remaining after actual expenses</strong><strong class="@(SafeBudget - ActualSpent < 0 ? "budget-danger" : "")">@Money(SafeBudget - ActualSpent)</strong></div>
+ </div>
+</section>
+
+@code {
+ private decimal totalBudget=25000;
+ private int days=5,travellers=2;
+ private decimal TotalBudget {get=>totalBudget;set=>totalBudget=Math.Clamp(value,0,1000000000);}
+ private int Days {get=>days;set=>days=Math.Clamp(value,1,365);}
+ private int Travellers {get=>travellers;set=>travellers=Math.Clamp(value,1,100);}
+ private decimal SafeBudget=>Math.Max(0,TotalBudget);
+ private int SafeDays=>Math.Max(1,Days),SafeTravellers=>Math.Max(1,Travellers);
+ private sealed class Category {public string Name {get;set;}="";public decimal Amount {get;set;}public string Color {get;set;}="";}
+ private sealed class Expense {public string Category {get;set;}="";public string Description {get;set;}="";public decimal Amount {get;set;}}
+ private sealed class SavedState {public decimal TotalBudget {get;set;}=25000;public int Days {get;set;}=5;public int Travellers {get;set;}=2;public List<decimal>? Allocations {get;set;}public List<Expense>? Expenses {get;set;}}
+ private readonly List<Category> Categories=new(){
+  new(){Name="Accommodation",Amount=7500,Color="#167f79"},
+  new(){Name="Transport",Amount=6250,Color="#428eb8"},
+  new(){Name="Food & Drinks",Amount=5000,Color="#d79a42"},
+  new(){Name="Sightseeing",Amount=3750,Color="#8b78ba"},
+  new(){Name="Emergency Reserve",Amount=2500,Color="#78928e"}
+ };
+ private readonly List<Expense> Expenses=new();
+ private string ExpenseCategory="Accommodation",ExpenseDescription="";
+ private decimal ExpenseAmount;
+ private bool loaded;
+ private decimal Allocated=>Categories.Sum(c=>c.Amount);
+ private decimal Remaining=>SafeBudget-Allocated;
+ private decimal ExpectedSpending=>Categories.Take(4).Sum(c=>c.Amount);
+ private decimal DailyAllowance=>ExpectedSpending/SafeDays;
+ private decimal ActualSpent=>Expenses.Sum(e=>e.Amount);
+ private static string Money(decimal value)=>"₹"+Math.Round(value,0,MidpointRounding.AwayFromZero).ToString("N0",System.Globalization.CultureInfo.GetCultureInfo("en-IN"));
+ protected override async Task OnAfterRenderAsync(bool firstRender){
+  if(!firstRender)return;
+  try{
+   var saved=await JS.InvokeAsync<SavedState?>("tripBudget.load");
+   if(saved is not null){
+    totalBudget=Math.Clamp(saved.TotalBudget,0,1000000000);
+    days=Math.Clamp(saved.Days,1,365);travellers=Math.Clamp(saved.Travellers,1,100);
+    if(saved.Allocations?.Count==Categories.Count)for(int i=0;i<Categories.Count;i++)Categories[i].Amount=Math.Clamp(saved.Allocations[i],0,1000000000);
+    if(saved.Expenses is not null)Expenses.AddRange(saved.Expenses.Where(x=>x.Amount>0 && x.Amount<=1000000000).Take(500));
+   }
+  }catch(JSException){}catch(InvalidOperationException){}
+  loaded=true;StateHasChanged();
+ }
+ private async Task Save(){
+  if(!loaded)return;
+  try{await JS.InvokeVoidAsync("tripBudget.save",new SavedState{TotalBudget=SafeBudget,Days=SafeDays,Travellers=SafeTravellers,Allocations=Categories.Select(c=>c.Amount).ToList(),Expenses=Expenses});}catch(JSException){}catch(InvalidOperationException){}
+ }
+ private async Task UpdateAmount(Category category,string? input){if(decimal.TryParse(input,System.Globalization.NumberStyles.Number,System.Globalization.CultureInfo.InvariantCulture,out var value))category.Amount=Math.Clamp(value,0,1000000000);else category.Amount=0;await Save();}
+ private async Task ResetAllocations(){
+  decimal[] ratios={.30m,.25m,.20m,.15m,.10m};
+  decimal used=0;
+  for(int i=0;i<Categories.Count-1;i++){Categories[i].Amount=Math.Round(SafeBudget*ratios[i],0,MidpointRounding.AwayFromZero);used+=Categories[i].Amount;}
+  Categories[^1].Amount=SafeBudget-used;
+  await Save();
+ }
+ private async Task AddExpense(){if(ExpenseAmount<=0||string.IsNullOrWhiteSpace(ExpenseDescription))return;Expenses.Add(new Expense{Category=ExpenseCategory,Description=ExpenseDescription.Trim(),Amount=Math.Min(ExpenseAmount,1000000000)});ExpenseAmount=0;ExpenseDescription="";await Save();}
+ private async Task RemoveExpense(int index){if(index>=0&&index<Expenses.Count){Expenses.RemoveAt(index);await Save();}}
+ private sealed record Tip(string Title,string Description,decimal Saving);
+ private IEnumerable<Tip> SavingsTips(){
+  var hotel=Categories[0].Amount;var transport=Categories[1].Amount;var food=Categories[2].Amount;var activities=Categories[3].Amount;
+  return new[]{
+   new Tip("Choose simpler stays","Compare hostels, guesthouses and budget hotels before booking. Model assumes a possible 15% accommodation reduction.",Math.Round(hotel*.15m,0)),
+   new Tip("Prefer shared or public transport","Compare bus, metro and shared rides with private vehicles where practical. Model assumes a possible 20% transport reduction.",Math.Round(transport*.20m,0)),
+   new Tip("Eat locally","Plan affordable local meals and carry drinking water where safe. Model assumes a possible 10% food reduction.",Math.Round(food*.10m,0)),
+   new Tip("Mix in free attractions","Look for public parks, walking routes and free-entry sites. Model assumes a possible 20% sightseeing reduction.",Math.Round(activities*.20m,0))
+  };
+ }
+ public ValueTask DisposeAsync()=>ValueTask.CompletedTask;
+}
