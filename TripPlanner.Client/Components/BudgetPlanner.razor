@@ -91,7 +91,8 @@
  private int Days {get=>days;set=>days=Math.Clamp(value,1,365);}
  private int Travellers {get=>travellers;set=>travellers=Math.Clamp(value,1,100);}
  private decimal SafeBudget=>Math.Max(0,TotalBudget);
- private int SafeDays=>Math.Max(1,Days),SafeTravellers=>Math.Max(1,Travellers);
+ private int SafeDays=>Math.Max(1,Days);
+ private int SafeTravellers=>Math.Max(1,Travellers);
  private sealed class Category {public string Name {get;set;}="";public decimal Amount {get;set;}public string Color {get;set;}="";}
  private sealed class Expense {public string Category {get;set;}="";public string Description {get;set;}="";public decimal Amount {get;set;}}
  private sealed class SavedState {public decimal TotalBudget {get;set;}=25000;public int Days {get;set;}=5;public int Travellers {get;set;}=2;public List<decimal>? Allocations {get;set;}public List<Expense>? Expenses {get;set;}}
