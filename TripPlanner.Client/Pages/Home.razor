@@ -1,35 +1,67 @@
 @page "/"
 @inject HttpClient Http
+@inject IJSRuntime JS
+<PageTitle>Trip Planner — Explore more, plan less</PageTitle>
+<div class="app-shell">
+<header class="topbar">
+ <a class="brand" href="/"><span class="brand-mark">✦</span><span>trip<span class="brand-accent">planner</span><small>YOUR JOURNEY, SIMPLIFIED</small></span></a>
+ <nav class="topnav"><a href="#planner">Plan a trip</a><a href="#features">How it works</a></nav>
+ <span class="top-pill">✧ AI-powered journeys</span>
+</header>
 <main>
-<section class="hero"><h1>✈ Trip Planner</h1><p>Make every journey memorable. Build a personalised itinerary in minutes.</p></section>
-@if (result is null) {
-<section class="card">
-<div class="muted">Step @(step+1) of 8</div><div class="progress"><span style="width:@((step+1)*12.5)%"></span></div>
-<h2>@questions[step]</h2>
-@if(step==0){<input placeholder="e.g. Hyderabad" @bind="origin"/>}
-@if(step==1){<input placeholder="e.g. Goa" @bind="destination"/>}
-@if(step==2){@foreach(var o in new[]{"Solo","Couple","Family","Friends"}){<button class="@(group==o?"active":"option")" @onclick="()=>group=o">@o</button>}}
-@if(step==3){@foreach(var o in new[]{"Low","Medium","High"}){<button class="@(budget==o?"active":"option")" @onclick="()=>budget=o">@o</button>}}
-@if(step==4){<input type="number" min="1" max="21" @bind="days"/>}
-@if(step==5){@foreach(var o in new[]{"Two Wheeler","Four Wheeler","Public Transport","Mixed Transport"}){<button class="@(transport==o?"active":"option")" @onclick="()=>transport=o">@o</button>}}
-@if(step==6){@foreach(var o in new[]{"Sightseeing","Adventure","Culture","Food","Relaxation","Nature"}){<button class="@(interests.Contains(o)?"active":"option")" @onclick="()=>Toggle(o)">@o</button>}}
-@if(step==7){<textarea placeholder="Optional requirements" @bind="preferences"></textarea>}
-<div style="margin-top:20px"><button class="secondary" disabled="@(step==0||busy)" @onclick="()=>step--">Back</button><button disabled="@(!Valid()||busy)" @onclick="Next">@(busy?"Generating...":step==7?"Generate my trip":"Continue →")</button></div>
-@if(error is not null){<p class="error">@error</p>}
+<section class="hero">
+ <div class="hero-content"><div class="eyebrow">✦ YOUR NEXT ADVENTURE STARTS HERE</div><h1>Go places.<br/><em>Make memories.</em></h1><p>From the first idea to the last sunset, plan your perfect getaway with a little help from AI.</p><a class="hero-cta" href="#planner">Start planning <span>↗</span></a></div>
+ <div class="hero-art"><div class="art-sun"></div><div class="art-mountain back"></div><div class="art-mountain front"></div><div class="art-water"></div><div class="art-label">EXPLORE THE EXTRAORDINARY <span>✦</span></div></div>
+ <div class="hero-bottom"><span>✈ PERSONALISED ITINERARIES</span><span>⌁ SMART ROUTES</span><span>◇ MADE FOR YOUR BUDGET</span></div>
 </section>
-} else {
-<section class="card"><h2>@result.TripPlan.Destination — @result.TripPlan.DurationDays days</h2><p>@result.Resp</p><p class="muted">@result.TripPlan.Origin → @result.TripPlan.Destination • @result.TripPlan.Transport • @result.TripPlan.Budget budget</p>
-@foreach(var day in result.TripPlan.Itinerary){<article><h3>Day @day.Day — @day.Title</h3>@foreach(var activity in day.Activities){<div class="activity"><strong>@activity.PlaceName</strong><p>@activity.Description</p><small>Best time: @activity.BestTime</small><p><a target="_blank" rel="noopener noreferrer" href="@MapUrl(activity.MapQuery??activity.PlaceName)">Open in Google Maps ↗</a></p></div>}</article>}
-<h3>Where to stay</h3>@foreach(var hotel in result.TripPlan.HotelSearchSuggestions){<p>🏨 @hotel</p>}<p class="muted">@result.TripPlan.Note</p><button @onclick="Reset">Plan another trip</button></section>
-}
-</main>
+<section id="planner" class="planner-section">
+ <div class="section-heading"><div><span class="kicker">THE JOURNEY BEGINS</span><h2>Plan your escape<span class="accent-dot">.</span></h2><p>Tell us a little about your trip. We'll handle the details.</p></div><div class="section-mark">01 / 02</div></div>
+ @if(result is null){
+ <div class="planner-layout">
+ <aside class="steps-panel"><div class="panel-heading">YOUR TRIP PROFILE <span>✧</span></div>
+ @for(int i=0;i<questions.Length;i++){var index=i;<div class="step-item @(step==index?"current":step>index?"complete":"")"><span class="step-number">@(step>index?"✓":(index+1).ToString("00"))</span><span>@stepLabels[index]</span>@if(step==index){<span class="step-indicator">●</span>}</div>}
+ <div class="steps-foot"><span>✦</span> Thoughtful trips, beautifully planned.</div>
+ </aside>
+ <section class="wizard-card">
+ <div class="wizard-top"><span class="kicker">LET'S GET TO KNOW YOUR TRIP</span><span class="counter">@(step+1) <span>/ 08</span></span></div>
+ <div class="progress-track"><span style="width:@((step+1)*12.5)%"></span></div>
+ <div class="wizard-content"><div class="question-icon">@icons[step]</div><h3>@questions[step]</h3><p class="question-help">@helps[step]</p>
+ @if(step==0){<label class="field-label">DEPARTURE CITY</label><input placeholder="e.g. Hyderabad, India" @bind="origin"/>}
+ @if(step==1){<label class="field-label">YOUR DESTINATION</label><input placeholder="e.g. Goa, India" @bind="destination"/>}
+ @if(step==2){<div class="choices">@foreach(var o in new[]{"Solo","Couple","Family","Friends"}){<button class="choice @(group==o?"selected":"")" @onclick="()=>group=o"><span>@(o=="Solo"?"◉":o=="Couple"?"♡":o=="Family"?"⌂":"♧")</span>@o</button>}</div>}
+ @if(step==3){<div class="choices">@foreach(var o in new[]{"Low","Medium","High"}){<button class="choice @(budget==o?"selected":"")" @onclick="()=>budget=o"><span>@(o=="Low"?"₹":o=="Medium"?"₹₹":"₹₹₹")</span>@o</button>}</div>}
+ @if(step==4){<label class="field-label">NUMBER OF DAYS</label><input type="number" min="1" max="21" @bind="days"/><p class="field-hint">Choose between 1 and 21 days.</p>}
+ @if(step==5){<div class="choices">@foreach(var o in new[]{"Two Wheeler","Four Wheeler","Public Transport","Mixed Transport"}){<button class="choice @(transport==o?"selected":"")" @onclick="()=>transport=o"><span>@(o=="Two Wheeler"?"♧":o=="Four Wheeler"?"▣":o=="Public Transport"?"▤":"✣")</span>@o</button>}</div>}
+ @if(step==6){<div class="choices">@foreach(var o in new[]{"Sightseeing","Adventure","Culture","Food","Relaxation","Nature"}){<button class="choice @(interests.Contains(o)?"selected":"")" @onclick="()=>Toggle(o)"><span>@(interests.Contains(o)?"✓":"＋")</span>@o</button>}</div><p class="field-hint">Select one or more interests.</p>}
+ @if(step==7){<label class="field-label">ANYTHING WE SHOULD KNOW?</label><textarea rows="4" placeholder="e.g. Family-friendly places, vegetarian food, accessible locations..." @bind="preferences"></textarea>}
+ </div>
+ <div class="wizard-footer"><button class="back-button" disabled="@(step==0||busy)" @onclick="()=>step--">← Back</button><button class="primary-button" disabled="@(!Valid()||busy)" @onclick="Next">@(busy?"Crafting your journey…":step==7?"✦ Generate my itinerary":"Continue →")</button></div>
+ @if(error is not null){<div class="error-message" role="alert">@error</div>}
+ </section>
+ </div>
+ }else{
+ <div class="results">
+ <div class="result-banner"><div><span class="kicker">✦ YOUR JOURNEY IS READY</span><h3>@result.TripPlan.Destination, here we come!</h3><p>@result.Resp</p></div><button class="reset-button" @onclick="Reset">↻ Plan another trip</button></div>
+ <div class="summary-grid"><div class="summary-tile"><span>DEPARTING FROM</span><strong>@result.TripPlan.Origin</strong></div><div class="summary-tile"><span>DESTINATION</span><strong>@result.TripPlan.Destination</strong></div><div class="summary-tile"><span>DURATION</span><strong>@result.TripPlan.DurationDays days</strong></div><div class="summary-tile"><span>TRAVEL STYLE</span><strong>@result.TripPlan.Transport</strong></div></div>
+ <div class="result-layout"><section class="days-list"><div class="result-heading"><span class="kicker">THE ADVENTURE UNFOLDS</span><h3>Your day-by-day itinerary</h3></div>
+ @foreach(var day in result.TripPlan.Itinerary){<article class="day-card"><div class="day-heading"><span class="day-badge">DAY @day.Day.ToString("00")</span><h4>@day.Title</h4></div>@foreach(var activity in day.Activities){<div class="activity"><span class="activity-marker">✦</span><div><strong>@activity.PlaceName</strong><p>@activity.Description</p><div class="activity-meta"><span>◷ @activity.BestTime</span><a target="_blank" rel="noopener noreferrer" href="@MapUrl(activity.MapQuery??activity.PlaceName)">View on Maps ↗</a></div></div></div>}</article>}
+ </section><aside class="result-side"><div class="side-card"><span class="kicker">✦ FIND YOUR STAY</span><h4>Where to stay</h4><p>Explore accommodation in these recommended areas.</p>@foreach(var area in result.TripPlan.HotelSearchSuggestions){<a class="stay-link" target="_blank" rel="noopener noreferrer" href="@MapUrl("hotels in "+area)">⌂ @area <span>↗</span></a>}</div><div class="side-card tip-card"><span class="kicker">GOOD TO KNOW</span><p>@result.TripPlan.Note</p><span class="tip-bottom">Travel smart. Stay curious. ✦</span></div></aside></div>
+ </div>
+ }
+</section>
+<section id="features" class="features"><div><span class="kicker">WHY TRIP PLANNER?</span><h2>Less planning.<br/><em>More exploring.</em></h2></div><div class="feature"><span>01 ✧</span><h4>Made just for you</h4><p>Your interests, your pace, your perfect itinerary.</p></div><div class="feature"><span>02 ⌁</span><h4>Go with confidence</h4><p>Discover places and open directions in Google Maps.</p></div><div class="feature"><span>03 ◇</span><h4>Travel your way</h4><p>From weekend escapes to long adventures.</p></div></section>
+</main><footer class="footer"><span class="brand-mini">✦ tripplanner</span><span>Built for the love of exploring.</span><span>© 2026 Trip Planner</span></footer>
+</div>
 @code {
 int step=0,days=4;bool busy=false;string origin="",destination="",group="Family",budget="Medium",transport="Four Wheeler",preferences="";string? error;PlanResponse? result;
 List<string> interests=new(){"Sightseeing"};
-string[] questions={"Where are you starting from?","Where would you like to go?","Who is travelling?","What is your budget?","How many days is your trip?","How will you travel?","What interests you?","Any special preferences?"};
-bool Valid()=>step switch{0=>!string.IsNullOrWhiteSpace(origin),1=>!string.IsNullOrWhiteSpace(destination),4=>days is >=1 and <=21,_=>true};
+string[] questions={"Where does your journey begin?","Where are we taking you?","Who's coming along?","What's your travel budget?","How long is your adventure?","How do you like to travel?","What makes a trip special for you?","Any final touches?"};
+string[] stepLabels={"Starting point","Destination","Travel companions","Your budget","Trip duration","Transport","Interests","Special requests"};
+string[] helps={"Every great adventure starts somewhere. Tell us your departure city.","Dream big. Pick the destination you've been thinking about.","Whether it's a solo escape or a family adventure, we'll tailor the plan.","We'll plan experiences that match your preferred spending level.","A quick weekend escape or a longer getaway? It's up to you.","Choose the way you'll explore. Four Wheeler is selected by default.","Pick what excites you most. You can choose multiple options.","Tell us anything that will make this journey uniquely yours."};
+string[] icons={"⌖","✈","♡","◇","◷","▣","✧","✎"};
+bool Valid()=>step switch{0=>!string.IsNullOrWhiteSpace(origin),1=>!string.IsNullOrWhiteSpace(destination),4=>days is >=1 and <=21,6=>interests.Count>0,_=>true};
 void Toggle(string item){if(!interests.Remove(item))interests.Add(item);}
 string MapUrl(string q)=>"https://www.google.com/maps/search/?api=1&query="+Uri.EscapeDataString(q+" "+destination);
-async Task Next(){error=null;if(step<7){step++;return;}busy=true;try{var request=new TripRequest(origin,destination,group,budget,days,transport,interests,preferences);using var response=await Http.PostAsJsonAsync("api/plan",request);if(!response.IsSuccessStatusCode){error="Could not generate the trip. Check the API configuration and try again.";return;}result=await response.Content.ReadFromJsonAsync<PlanResponse>();}catch(Exception){error="Cannot connect to the trip planning API. Please try again.";}finally{busy=false;}}
+async Task Next(){error=null;if(step<7){step++;return;}busy=true;try{var request=new TripRequest(origin,destination,group,budget,days,transport,interests,preferences);using var response=await Http.PostAsJsonAsync("api/plan",request);if(!response.IsSuccessStatusCode){error="Could not generate your trip. Please check that the Gemini API is configured and try again.";return;}result=await response.Content.ReadFromJsonAsync<PlanResponse>();if(result is null)error="No itinerary was returned. Please try again.";}catch(Exception){error="Cannot connect to the trip planning API. Make sure the backend is running.";}finally{busy=false;}}
 void Reset(){step=0;result=null;error=null;}
 }
