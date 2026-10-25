@@ -3,13 +3,13 @@
 <PageTitle>Trip Planner — Explore more, plan less</PageTitle>
 <div class="app-shell">
 <header class="topbar">
- <a class="brand" href="/"><span class="brand-mark">✦</span><span>trip<span class="brand-accent">planner</span><small>YOUR JOURNEY, SIMPLIFIED</small></span></a>
+ <a class="brand" href="/"><span class="brand-mark">🎒</span><span>trip<span class="brand-accent">planner</span><small>YOUR JOURNEY, SIMPLIFIED</small></span></a>
  <nav class="topnav"><a href="#planner">Plan a trip</a><a href="#features">How it works</a></nav>
- <span class="top-pill">✧ AI-powered journeys</span>
+ <span class="top-pill">🎒 AI-powered journeys</span>
 </header>
 <main>
 <section class="hero">
- <div class="hero-content"><div class="eyebrow">✦ YOUR NEXT ADVENTURE STARTS HERE</div><h1>Go places.<br/><em>Make memories.</em></h1><p>From the first idea to the last sunset, plan your perfect getaway with a little help from AI.</p><a class="hero-cta" href="#planner">Start planning <span>↗</span></a></div>
+ <div class="hero-content"><div class="eyebrow">🎒 YOUR NEXT ADVENTURE STARTS HERE</div><h1>Go places.<br/><em>Make memories.</em></h1><p>From the first idea to the last sunset, plan your perfect getaway with a little help from AI.</p><a class="hero-cta" href="#planner">Start planning <span>↗</span></a></div>
  <div class="hero-art"><div class="art-sun"></div><div class="art-mountain back"></div><div class="art-mountain front"></div><div class="art-water"></div><div class="art-label">EXPLORE THE EXTRAORDINARY <span>✦</span></div></div>
  <div class="hero-bottom"><span>✈ PERSONALISED ITINERARIES</span><span>⌁ SMART ROUTES</span><span>◇ MADE FOR YOUR BUDGET</span></div>
 </section>
@@ -19,7 +19,7 @@
  <div class="planner-layout">
  <aside class="steps-panel"><div class="panel-heading">YOUR TRIP PROFILE <span>✧</span></div>
  @for(int i=0;i<questions.Length;i++){var index=i;<div class="step-item @(step==index?"current":step>index?"complete":"")"><span class="step-number">@(step>index?"✓":(index+1).ToString("00"))</span><span>@stepLabels[index]</span>@if(step==index){<span class="step-indicator">●</span>}</div>}
- <div class="steps-foot"><span>✦</span> Thoughtful trips, beautifully planned.</div>
+ <div class="steps-foot"><span>🎒</span> Thoughtful trips, beautifully planned.</div>
  </aside>
  <section class="wizard-card">
  <div class="wizard-top"><span class="kicker">LET'S GET TO KNOW YOUR TRIP</span><span class="counter">@(step+1) <span>/ 08</span></span></div>
@@ -34,22 +34,22 @@
  @if(step==6){<div class="choices">@foreach(var o in new[]{"Sightseeing","Adventure","Culture","Food","Relaxation","Nature"}){<button class="choice @(interests.Contains(o)?"selected":"")" @onclick="()=>Toggle(o)"><span>@(interests.Contains(o)?"✓":"＋")</span>@o</button>}</div><p class="field-hint">Select one or more interests.</p>}
  @if(step==7){<label class="field-label">ANYTHING WE SHOULD KNOW?</label><textarea rows="4" placeholder="e.g. Family-friendly places, vegetarian food, accessible locations..." @bind="preferences"></textarea>}
  </div>
- <div class="wizard-footer"><button class="back-button" disabled="@(step==0||busy)" @onclick="()=>step--">← Back</button><button class="primary-button" disabled="@(!Valid()||busy)" @onclick="Next">@(busy?"Crafting your journey…":step==7?"✦ Generate my itinerary":"Continue →")</button></div>
+ <div class="wizard-footer"><button class="back-button" disabled="@(step==0||busy)" @onclick="()=>step--">← Back</button><button class="primary-button" disabled="@(!Valid()||busy)" @onclick="Next">@(busy?"Crafting your journey…":step==7?"🎒 Generate my itinerary":"Continue →")</button></div>
  @if(error is not null){<div class="error-message" role="alert">@error</div>}
  </section>
  </div>
  }else{
  <div class="results">
- <div class="result-banner"><div><span class="kicker">✦ YOUR JOURNEY IS READY</span><h3>@result.TripPlan.Destination, here we come!</h3><p>@result.Resp</p></div><button class="reset-button" @onclick="Reset">↻ Plan another trip</button></div>
+ <div class="result-banner"><div><span class="kicker">🎒 YOUR JOURNEY IS READY</span><h3>@result.TripPlan.Destination, here we come!</h3><p>@result.Resp</p></div><button class="reset-button" @onclick="Reset">↻ Plan another trip</button></div>
  <div class="summary-grid"><div class="summary-tile"><span>DEPARTING FROM</span><strong>@result.TripPlan.Origin</strong></div><div class="summary-tile"><span>DESTINATION</span><strong>@result.TripPlan.Destination</strong></div><div class="summary-tile"><span>DURATION</span><strong>@result.TripPlan.DurationDays days</strong></div><div class="summary-tile"><span>TRAVEL STYLE</span><strong>@result.TripPlan.Transport</strong></div></div>
  <div class="result-layout"><section class="days-list"><div class="result-heading"><span class="kicker">THE ADVENTURE UNFOLDS</span><h3>Your day-by-day itinerary</h3></div>
  @foreach(var day in result.TripPlan.Itinerary){<article class="day-card"><div class="day-heading"><span class="day-badge">DAY @day.Day.ToString("00")</span><h4>@day.Title</h4></div>@foreach(var activity in day.Activities){<div class="activity"><span class="activity-marker">✦</span><div><strong>@activity.PlaceName</strong><p>@activity.Description</p><div class="activity-meta"><span>◷ @activity.BestTime</span><a target="_blank" rel="noopener noreferrer" href="@MapUrl(activity.MapQuery??activity.PlaceName)">View on Maps ↗</a></div></div></div>}</article>}
- </section><aside class="result-side"><div class="side-card"><span class="kicker">✦ FIND YOUR STAY</span><h4>Where to stay</h4><p>Explore accommodation in these recommended areas.</p>@foreach(var area in result.TripPlan.HotelSearchSuggestions){<a class="stay-link" target="_blank" rel="noopener noreferrer" href="@MapUrl("hotels in "+area)">⌂ @area <span>↗</span></a>}</div><div class="side-card tip-card"><span class="kicker">GOOD TO KNOW</span><p>@result.TripPlan.Note</p><span class="tip-bottom">Travel smart. Stay curious. ✦</span></div></aside></div>
+ </section><aside class="result-side"><div class="side-card"><span class="kicker">🎒 FIND YOUR STAY</span><h4>Where to stay</h4><p>Explore accommodation in these recommended areas.</p>@foreach(var area in result.TripPlan.HotelSearchSuggestions){<a class="stay-link" target="_blank" rel="noopener noreferrer" href="@MapUrl("hotels in "+area)">⌂ @area <span>↗</span></a>}</div><div class="side-card tip-card"><span class="kicker">GOOD TO KNOW</span><p>@result.TripPlan.Note</p><span class="tip-bottom">Travel smart. Stay curious. ✦</span></div></aside></div>
  </div>
  }
 </section>
 <section id="features" class="features"><div><span class="kicker">WHY TRIP PLANNER?</span><h2>Less planning.<br/><em>More exploring.</em></h2></div><div class="feature"><span>01 ✧</span><h4>Made just for you</h4><p>Your interests, your pace, your perfect itinerary.</p></div><div class="feature"><span>02 ⌁</span><h4>Go with confidence</h4><p>Discover places and open directions in Google Maps.</p></div><div class="feature"><span>03 ◇</span><h4>Travel your way</h4><p>From weekend escapes to long adventures.</p></div></section>
-</main><footer class="footer"><span class="brand-mini">✦ tripplanner</span><span>Built for the love of exploring.</span><span>© 2026 Trip Planner</span></footer>
+</main><footer class="footer"><span class="brand-mini">🎒 tripplanner</span><span>Built for the love of exploring.</span><span>© 2026 Trip Planner</span></footer>
 </div>
 @code {
 int step=0,days=4;bool busy=false;string origin="",destination="",group="Family",budget="Medium",transport="Four Wheeler",preferences="";string? error;PlanResponse? result;
