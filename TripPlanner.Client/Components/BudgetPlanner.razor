@@ -69,7 +69,28 @@
 @code {
  private decimal totalBudget=25000;
  private int days=5,travellers=2;
- private decimal TotalBudget {get=>totalBudget;set=>totalBudget=Math.Clamp(value,0,1000000000);}
+ private decimal TotalBudget {
+  get=>totalBudget;
+  set{
+   var newBudget=Math.Clamp(value,0,1000000000);
+   if(newBudget==totalBudget)return;
+   var oldBudget=totalBudget;
+   totalBudget=newBudget;
+   // Preserve each user's allocation proportions when the overall budget changes.
+   if(oldBudget>0){
+    decimal sum=0;
+    for(int i=0;i<Categories.Count-1;i++){
+     Categories[i].Amount=Math.Round(Categories[i].Amount*newBudget/oldBudget,0,MidpointRounding.AwayFromZero);
+     sum+=Categories[i].Amount;
+    }
+    Categories[^1].Amount=Math.Max(0,Math.Round(AllocatedBeforeLast(newBudget,oldBudget),0,MidpointRounding.AwayFromZero));
+   }else{
+    decimal[] weights={.30m,.25m,.20m,.15m,.10m};
+    for(int i=0;i<Categories.Count;i++)Categories[i].Amount=Math.Round(newBudget*weights[i],0,MidpointRounding.AwayFromZero);
+   }
+  }
+ }
+ private decimal AllocatedBeforeLast(decimal newBudget,decimal oldBudget)=>Categories[^1].Amount*newBudget/oldBudget;
  private int Days {get=>days;set=>days=Math.Clamp(value,1,365);}
  private int Travellers {get=>travellers;set=>travellers=Math.Clamp(value,1,100);}
  private decimal SafeBudget=>Math.Max(0,TotalBudget);
