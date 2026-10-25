@@ -10,6 +10,9 @@ builder.Services.AddCors(options => options.AddPolicy("client", policy =>
     policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod()));
 var app = builder.Build();
 app.UseCors("client");
+// Serve the published Blazor WebAssembly frontend from the same origin in production.
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", provider = "gemini" }));
 
 app.MapPost("/api/plan", async (TripRequest request, IHttpClientFactory factory, IConfiguration config, CancellationToken ct) =>
@@ -87,4 +90,6 @@ app.MapPost("/api/plan", async (TripRequest request, IHttpClientFactory factory,
         return Results.Problem("Could not generate itinerary. Please try again.", statusCode: 502);
     }
 });
+// SPA fallback allows client-side routes to load on refresh.
+if (app.Environment.IsProduction()) app.MapFallbackToFile("index.html");
 app.Run();
