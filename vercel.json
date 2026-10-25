@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo 'No npm dependencies required'",
+  "buildCommand": "bash ./scripts/build-vercel.sh",
+  "outputDirectory": "vercel-dist",
+  "functions": {
+    "api/plan.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/api/plan",
+      "destination": "/api/plan"
+    },
+    {
+      "source": "/((?!api/|_framework/|css/|js/|_content/|favicon.ico|appsettings.json|.*\\.[^/]+$).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
